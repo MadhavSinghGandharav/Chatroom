@@ -1,8 +1,7 @@
-
-use std::io::{Write, stdout, stdin};
-use std::thread;
-use chatroom::utility::{input, connect_to_stream,read_from_stream};
 use chatroom::Client;
+use chatroom::utility::{connect_to_stream, input, read_from_stream};
+use std::io::{Write, stdin, stdout};
+use std::thread;
 
 pub fn run() {
     // 1. Stream connect
@@ -16,6 +15,7 @@ pub fn run() {
     };
 
     // 2. Create client
+    let reader = stream.try_clone().unwrap();
     let client_name = input("Enter Username: ");
     let mut client = Client::new(client_name, stream);
 
@@ -26,11 +26,10 @@ pub fn run() {
     }
 
     // 4. Spawn reader thread
-    let reader = client.stream.clone();
+
     let handle = thread::spawn(move || {
         loop {
-            let stream = reader.lock().unwrap();
-            match read_from_stream(&stream) {
+            match read_from_stream(&reader) {
                 Ok(Some(msg)) => println!("\n{msg}"),
                 Ok(None) => {
                     eprintln!("\nServer closed connection");
@@ -51,21 +50,16 @@ pub fn run() {
         print!(".> ");
         stdout().flush().unwrap();
 
-        if stdin().read_line(&mut msg).is_err() {
-            eprintln!("Failed to read input");
-            break;
-        }
-
+        stdin().read_line(&mut msg).expect("");
 
         if msg.trim() == "/exit" {
             break;
         }
-        if let Err(e) = client.write_to_stream(&msg) {
+        if let Err(e) = client.write_to_stream(msg.trim()) {
             eprintln!("Error sending message: {}", e);
             break;
         }
+        println!("hello debug");
     }
     handle.join().unwrap();
-    
 }
-

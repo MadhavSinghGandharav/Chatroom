@@ -1,11 +1,9 @@
-use chatroom::{handle_stream,initialize_stream};
 use chatroom::utility::get_ip;
+use chatroom::{handle_client, start_broadcaster};
 use std::collections::HashMap;
 use std::net::TcpListener;
-use std::sync::{Mutex,Arc};
 
-
-
+use std::sync::{Arc, Mutex, mpsc};
 
 pub fn run() {
     let ip = match get_ip() {
@@ -26,14 +24,22 @@ pub fn run() {
     println!("Server Started at IP: {}", ip);
 
     let clients = Arc::new(Mutex::new(HashMap::new()));
-
+    let (tx, rx) = mpsc::channel();
+    let clients_cloned = Arc::clone(&clients);
+    let handle = std::thread::spawn(move || {
+        start_broadcaster(rx, clients_cloned);
+    });
+    // waiting for client
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                let clients = Arc::clone(&clients);
+                // spawing individual thread for every user
+
+                let clients_cloned = Arc::clone(&clients);
+                let tx_cloned = tx.clone();
+
                 std::thread::spawn(move || {
-                    initialize_stream(Arc::clone(&clients), &stream);
-                    handle_client(clients, stream);
+                    handle_client(clients_cloned, stream, tx_cloned).unwrap();
                 });
             }
             Err(e) => {
@@ -41,5 +47,5 @@ pub fn run() {
             }
         }
     }
+    handle.join().unwrap();
 }
-

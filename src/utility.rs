@@ -40,8 +40,8 @@ pub fn connect_to_stream(ip:&str) -> Result<TcpStream,&'static str> {
 }  
 
 
- pub fn read_from_stream(mut stream : &TcpStream) -> Result<Option<String>, std::io::Error> {
-        let mut len_buf = [0; 2];
+pub fn read_from_stream(mut stream : &TcpStream) -> Result<Option<String>, std::io::Error> {
+    let mut len_buf = [0; 2];
 
         // Try reading message length
         match stream.read_exact(&mut len_buf) {
@@ -64,4 +64,11 @@ pub fn connect_to_stream(ip:&str) -> Result<TcpStream,&'static str> {
         }
     }
 
+pub fn write_to_stream(mut stream:&TcpStream, msg: &str) -> std::io::Result<()> {
+
+    let len = msg.len() as u16;
+    stream.write_all(&len.to_be_bytes())?;
+    stream.write_all(msg.as_bytes())?;
+    Ok(())
+}
 
