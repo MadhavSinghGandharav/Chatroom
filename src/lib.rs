@@ -79,8 +79,7 @@ pub fn handle_client(
             Err(_) => return Err("Server error: Failed to read message"),
         };
 
-        let final_msg = format!("{}: {}", username, msg);
-        if tx.send(final_msg).is_err() {
+        if tx.send(msg).is_err() {
             break;
         }
     }
