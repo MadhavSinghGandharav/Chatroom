@@ -39,7 +39,9 @@ pub fn run() {
                 let tx_cloned = tx.clone();
 
                 std::thread::spawn(move || {
-                    handle_client(clients_cloned, stream, tx_cloned).unwrap();
+                    if let Err(_) = handle_client(clients_cloned, stream, tx_cloned){
+                        return;
+                    }
                 });
             }
             Err(e) => {

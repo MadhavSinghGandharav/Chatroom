@@ -58,13 +58,7 @@ pub fn handle_client(
     let client = Client::new(username.clone(), stream_cloned);
 
     // Broadcast join message
-    let join_msg = format!("{} joined!", &username);
-    {
-        let clients_guard = clients.lock().unwrap();
-        for (_, client) in clients_guard.iter() {
-            let _ = write_to_stream(&client.stream.lock().unwrap(), &join_msg);
-        }
-    }
+    tx.send(format!("{} : joined!",&username)).unwrap();
 
     {
         let mut clients_guard = clients.lock().unwrap();
@@ -75,7 +69,11 @@ pub fn handle_client(
     loop {
         let msg = match read_from_stream(&stream) {
             Ok(Some(msg)) => msg,
-            Ok(None) => return Err("Server error: Disconnected early"),
+            Ok(None) => {
+                clients.lock().unwrap().remove(&username);
+                tx.send(format!("{}: left!",username)).unwrap();
+
+                return Err("client left")}
             Err(_) => return Err("Server error: Failed to read message"),
         };
 
